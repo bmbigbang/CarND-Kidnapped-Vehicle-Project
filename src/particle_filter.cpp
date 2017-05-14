@@ -18,6 +18,23 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
+	// assuming a 101 by 101 grid size for the map, running from -100 to 100 in each dimension.
+	// initializing particles with evenly spread particles within the grid
+	num_particles = 101 * 101;
+
+	weights.assign(num_particles, 1.0);
+
+	for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 100; j++) {
+            Particle p;
+            p.id = (1000 * (i + 1)) + (j + 1);
+            p.x = x;
+            p.y = y;
+            p.theta = theta;
+            p.weight = 1.0;
+            particles.push_back(p);
+        }
+    }
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
