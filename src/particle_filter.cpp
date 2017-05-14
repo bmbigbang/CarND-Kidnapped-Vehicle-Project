@@ -18,18 +18,18 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-	// assuming a 101 by 101 grid size for the map, running from -100 to 100 in each dimension.
-	// initializing particles with evenly spread particles within the grid
+	// assuming a 101 by 101 grid size for the map, running from -10*std to 10*std in each dimension .
+	// initializing particles with evenly spread particles within the grid and same orientation
 	num_particles = 101 * 101;
 
 	weights.assign(num_particles, 1.0);
 
-	for (int i = 0; i < 100; i++) {
-        for (int j = 0; j < 100; j++) {
+	for (int i = 0; i <= 100; i++) {
+        for (int j = 0; j <= 100; j++) {
             Particle p;
             p.id = (1000 * (i + 1)) + (j + 1);
-            p.x = x;
-            p.y = y;
+            p.x = x * (((i - 50) * 2.0) / 10) * std[0];
+            p.y = y * (((j - 50) * 2.0) / 10) * std[1];
             p.theta = theta;
             p.weight = 1.0;
             particles.push_back(p);
@@ -42,6 +42,33 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
+    default_random_engine gen;
+
+    normal_distribution<double> N_x_pred(0, std_pos[0]);
+    normal_distribution<double> N_y_pred(0, std_pos[1]);
+    normal_distribution<double> N_theta_pred(0, std_pos[2]);
+
+    for (int i = 0; i < num_particles; i++) {
+
+        // define values for prediction calculation
+        Particle p = particles[i];
+        double x0 = p.x;
+        double y0 = p.y;
+        double yaw0 = p.theta;
+        double yaw1 = p.theta + (yaw_rate * delta_t);
+
+        // add gaussian noise from normal distrubtions
+        double sample_x, sample_y, sample_theta;
+        sample_x = N_x_pred(gen);
+        sample_y = N_y_pred(gen);
+        sample_theta = N_theta_pred(gen);
+
+        // update particle values
+        p.x = sample_x + x0 + ((velocity / yaw_rate) * (sin(yaw1) - sin(yaw0)));
+        p.y = sample_y + y0 + ((velocity / yaw_rate) * (cos(yaw0) - cos(yaw1)));
+        p.theta = sample_theta + yaw1;
+
+	}
 
 }
 
