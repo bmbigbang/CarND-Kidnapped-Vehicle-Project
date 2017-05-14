@@ -18,23 +18,24 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-	// assuming a 101 by 101 grid size for the map, running from -10*std to 10*std in each dimension .
+	// assuming a 51 by 51 grid size for the map, running from -5*std to 5*std in each dimension .
 	// initializing particles with evenly spread particles within the grid and same orientation
-	num_particles = 101 * 101;
+	num_particles = 51 * 51;
 
 	weights.assign(num_particles, 1.0);
 
-	for (int i = 0; i <= 100; i++) {
-        for (int j = 0; j <= 100; j++) {
+	for (int i = 0; i <= 50; i++) {
+        for (int j = 0; j <= 50; j++) {
             Particle p;
             p.id = (1000 * (i + 1)) + (j + 1);
-            p.x = x * (((i - 50) * 2.0) / 10) * std[0];
-            p.y = y * (((j - 50) * 2.0) / 10) * std[1];
+            p.x = x * (((i - 25) * 2.0) / 5) * std[0];
+            p.y = y * (((j - 25) * 2.0) / 5) * std[1];
             p.theta = theta;
             p.weight = 1.0;
             particles.push_back(p);
         }
     }
+    is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
@@ -69,7 +70,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         p.theta = sample_theta + yaw1;
 
 	}
-
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
