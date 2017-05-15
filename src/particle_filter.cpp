@@ -140,6 +140,31 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
+    // find the highest weight
+    double max_w = 0.0;
+    for (int i = 0; i < weights.size(); i++) {
+        if (max_w < weights[i]) {
+            max_w = weights[i];
+        }
+    }
+
+    int r = (double)rand() / (double)((unsigned)RAND_MAX) * num_particles;
+
+    std::vector<Particle> resampled_particles;
+    std::vector<double> resampled_weights;
+    for (int i = 0; i < num_particles; i++) {
+        double better = (double)rand() / (double)((unsigned)RAND_MAX) * 2 * max_w;
+
+        while (weights[r] < better) {
+            better -= weights[r];
+            r = (r + 1) % num_particles;
+        }
+        resampled_particles.push_back(particles[r]);
+        resampled_weights.push_back(weights[r]);
+    }
+    particles = resampled_particles;
+    weights = resampled_weights;
+
 }
 
 void ParticleFilter::write(std::string filename) {
