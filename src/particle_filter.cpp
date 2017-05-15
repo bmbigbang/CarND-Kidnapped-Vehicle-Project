@@ -78,6 +78,9 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+
+    for (int i = 0; i < observations.size(); ++i) {
+    }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -93,6 +96,43 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33. Note that you'll need to switch the minus sign in that equation to a plus to account 
 	//   for the fact that the map's y-axis actually points downwards.)
 	//   http://planning.cs.uiuc.edu/node99.html
+
+
+    // define car's mapped coordinates u, k
+    LandmarkObs t_obs;
+    for (int i = 0; i < num_particles; i++) {
+        // define values for prediction calculation
+        Particle p = particles[i];
+        double min_x = 500.0;
+        double min_y = 500.0;
+        double prob = 1.0;
+
+        for (int j = 0; j < observations.size(); j++) {
+            LandmarkObs obs = observations[j];
+            t_obs.x = p.x - (obs.y * sin(p.theta - (M_PI / 2))) + (obs.x * cos(p.theta - (M_PI / 2)));
+            t_obs.y = p.y + (obs.y * cos(p.theta - (M_PI / 2))) + (obs.x * sin(p.theta - (M_PI / 2)));
+
+            // find nearest neighbour to observation
+            for (int k = 0; k < map_landmarks.landmark_list.size(); k++) {
+                Map::single_landmark_s landmark = map_landmarks.landmark_list[k];
+                if (fabs(t_obs.x - landmark.x_f) < min_x && (
+                         (t_obs.x <= 0 && landmark.x_f <= 0) || (t_obs.x > 0 && landmark.x_f > 0)) &&
+                    fabs(t_obs.y - landmark.y_f) < min_y && (
+                         (t_obs.y <= 0 && landmark.y_f <= 0) || (t_obs.y > 0 && landmark.y_f > 0))) {
+                    min_x = t_obs.x - landmark.x_f;
+                    min_y = t_obs.y - landmark.y_f;
+                };
+            }
+
+            // multiply to prob multivariate gaussian holder
+
+            prob *= exp(-1 * ((pow(min_x, 2) / (2 * pow(std_landmark[0], 2))) +
+                               (pow(min_y, 2) / (2 * pow(std_landmark[1], 2))))
+                    ) / (M_PI * 2 * std_landmark[0] * std_landmark[1]);
+
+        }
+        weights[i] = prob;
+    }
 }
 
 void ParticleFilter::resample() {
