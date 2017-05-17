@@ -20,7 +20,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 	// assuming an n by n grid size for the map, running from (-n/5)*std to (n/5)*std in each dimension .
 	// initializing particles with evenly spread particles within the grid and same orientation
-    int grid_size = 125;
+    int grid_size = 25;
 	num_particles = (grid_size + 1) * (grid_size + 1);
 
 	weights.assign(num_particles, 1.0);
@@ -110,18 +110,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
         for (int j = 0; j < observations.size(); j++) {
             LandmarkObs obs = observations[j];
-            t_obs.x = p.x + (obs.y * sin(p.theta)) + (obs.x * cos(p.theta));
+            t_obs.x = p.x - (obs.y * sin(p.theta)) + (obs.x * cos(p.theta));
             t_obs.y = p.y + (obs.y * cos(p.theta)) + (obs.x * sin(p.theta));
 
             // find nearest neighbour to observation
             for (int k = 0; k < map_landmarks.landmark_list.size(); k++) {
                 Map::single_landmark_s landmark = map_landmarks.landmark_list[k];
-                if ((fabs(t_obs.x - landmark.x_f) < min_x && (
-                         (t_obs.x < 0 && landmark.x_f < 0) || (t_obs.x >= 0 && landmark.x_f >= 0))) &&
-                    (fabs(t_obs.y - landmark.y_f) < min_y && (
-                         (t_obs.y < 0 && landmark.y_f < 0) || (t_obs.y >= 0 && landmark.y_f >= 0)))) {
-                    min_x = t_obs.x - landmark.x_f;
-                    min_y = t_obs.y - landmark.y_f;
+                if (fabs(t_obs.x - landmark.x_f) < min_x &&
+                    fabs(t_obs.y - landmark.y_f) < min_y) {
+                    min_x = fabs(t_obs.x - landmark.x_f);
+                    min_y = fabs(t_obs.y - landmark.y_f);
                 };
             }
 
