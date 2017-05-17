@@ -18,18 +18,19 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-	// assuming a 51 by 51 grid size for the map, running from -5*std to 5*std in each dimension .
+	// assuming an n by n grid size for the map, running from (-n/5)*std to (n/5)*std in each dimension .
 	// initializing particles with evenly spread particles within the grid and same orientation
-	num_particles = 51 * 51;
+    int grid_size = 125;
+	num_particles = (grid_size + 1) * (grid_size + 1);
 
 	weights.assign(num_particles, 1.0);
 
-	for (int i = 0; i <= 50; i++) {
-        for (int j = 0; j <= 50; j++) {
+	for (int i = 0; i <= grid_size; i++) {
+        for (int j = 0; j <= grid_size; j++) {
             Particle p;
             p.id = (1000 * (i + 1)) + (j + 1);
-            p.x = x * (((i - 25) * 2.0) / 5) * std[0];
-            p.y = y * (((j - 25) * 2.0) / 5) * std[1];
+            p.x = x + (x * (((i - (grid_size / 2.0))) / (grid_size / 0.7)) * std[0]);
+            p.y = y + (y * (((j - (grid_size / 2.0))) / (grid_size / 0.7)) * std[1]);
             p.theta = theta;
             p.weight = 1.0;
             particles.push_back(p);
@@ -69,6 +70,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         p.y = sample_y + y0 + ((velocity / yaw_rate) * (cos(yaw0) - cos(yaw1)));
         p.theta = sample_theta + yaw1;
 
+        particles[i] = p;
+
 	}
 }
 
@@ -79,8 +82,6 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   implement this method and use it as a helper during the updateWeights phase.
 
 
-    for (int i = 0; i < observations.size(); ++i) {
-    }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -109,16 +110,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
         for (int j = 0; j < observations.size(); j++) {
             LandmarkObs obs = observations[j];
-            t_obs.x = p.x - (obs.y * sin(p.theta - (M_PI / 2))) + (obs.x * cos(p.theta - (M_PI / 2)));
-            t_obs.y = p.y + (obs.y * cos(p.theta - (M_PI / 2))) + (obs.x * sin(p.theta - (M_PI / 2)));
+            t_obs.x = p.x + (obs.y * sin(p.theta)) + (obs.x * cos(p.theta));
+            t_obs.y = p.y + (obs.y * cos(p.theta)) + (obs.x * sin(p.theta));
 
             // find nearest neighbour to observation
             for (int k = 0; k < map_landmarks.landmark_list.size(); k++) {
                 Map::single_landmark_s landmark = map_landmarks.landmark_list[k];
-                if (fabs(t_obs.x - landmark.x_f) < min_x && (
-                         (t_obs.x <= 0 && landmark.x_f <= 0) || (t_obs.x > 0 && landmark.x_f > 0)) &&
-                    fabs(t_obs.y - landmark.y_f) < min_y && (
-                         (t_obs.y <= 0 && landmark.y_f <= 0) || (t_obs.y > 0 && landmark.y_f > 0))) {
+                if ((fabs(t_obs.x - landmark.x_f) < min_x && (
+                         (t_obs.x < 0 && landmark.x_f < 0) || (t_obs.x >= 0 && landmark.x_f >= 0))) &&
+                    (fabs(t_obs.y - landmark.y_f) < min_y && (
+                         (t_obs.y < 0 && landmark.y_f < 0) || (t_obs.y >= 0 && landmark.y_f >= 0)))) {
                     min_x = t_obs.x - landmark.x_f;
                     min_y = t_obs.y - landmark.y_f;
                 };
@@ -131,6 +132,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
                     ) / (M_PI * 2 * std_landmark[0] * std_landmark[1]);
 
         }
+        // update weight after all observations
         weights[i] = prob;
     }
 }
@@ -148,12 +150,12 @@ void ParticleFilter::resample() {
         }
     }
 
-    int r = (double)rand() / (double)((unsigned)RAND_MAX) * num_particles;
+    int r = ((double)rand() / (double)((unsigned)RAND_MAX)) * (num_particles - 1);
 
     std::vector<Particle> resampled_particles;
     std::vector<double> resampled_weights;
     for (int i = 0; i < num_particles; i++) {
-        double better = (double)rand() / (double)((unsigned)RAND_MAX) * 2 * max_w;
+        double better = ((double)rand() / (double)((unsigned)RAND_MAX)) * 2 * max_w;
 
         while (weights[r] < better) {
             better -= weights[r];
